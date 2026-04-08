@@ -35,7 +35,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install "optimum[exporters]" "transformers>=4.40" onnx "onnxruntime>=1.17"
+          pip install "optimum[onnxruntime]" "transformers>=4.40" onnx "onnxruntime>=1.17"
 
       - name: Convert model to ONNX
         env:
