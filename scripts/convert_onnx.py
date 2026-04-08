@@ -17,7 +17,7 @@ model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float32
 model.eval()
 
 print("Downloading tokenizer files directly...")
-for fname in ["tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt", "special_tokens_map.json"]:
+for fname in ["config.json", "generation_config.json", "tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt", "special_tokens_map.json"]:
     try:
         path = hf_hub_download(repo_id=model_id, filename=fname)
         shutil.copy(path, os.path.join(output_dir, fname))
