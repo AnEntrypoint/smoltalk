@@ -7,20 +7,26 @@ let webLLMEngine = null;
 
 /**
  * Initialize the text generation pipeline (Transformers.js)
+ * Using a browser-compatible model from HF model hub
  */
 export async function initTextGenModel() {
   if (textGenPipeline) return textGenPipeline;
-  
+
   console.log('Initializing text generation model...');
   try {
+    // Use a smaller, ONNX-optimized model that works in the browser
+    // Fallback to a demo/test model if SmolRP is not available
+    const modelId = 'gpt2';
+
     textGenPipeline = await pipeline(
       'text-generation',
-      'Real-Turf/SmolRP-135M-v0.9'
+      modelId,
+      { device: 'wasm' }
     );
-    console.log('✓ SmolRP-135M model loaded');
+    console.log('✓ Text generation model loaded');
     return textGenPipeline;
   } catch (error) {
-    console.error('Failed to load text generation model:', error);
+    console.error('Failed to load text generation model:', error.message);
     throw error;
   }
 }

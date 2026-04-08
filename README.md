@@ -1,6 +1,8 @@
-# SmolTalk - SmolRP-135M Text Generation
+# SmolTalk - Text Generation Demo
 
-A browser-based text generation application using the [SmolRP-135M-v0.9](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9) model from Hugging Face, powered by [Transformers.js](https://xenova.github.io/transformers.js/) and [web-llm](https://github.com/mlc-ai/web-llm).
+A browser-based text generation application powered by [Transformers.js](https://xenova.github.io/transformers.js/) and [web-llm](https://github.com/mlc-ai/web-llm).
+
+**Note**: Currently configured with GPT-2 for broad browser compatibility. Can be swapped to [SmolRP-135M-v0.9](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9) or other ONNX-optimized models.
 
 ## Features
 
@@ -43,7 +45,7 @@ The dev server will start at `https://localhost:5173` (Vite uses HTTPS for Share
 ## Usage
 
 1. Open the app in your browser
-2. Wait for the SmolRP model to load (first run may take a moment as it downloads the model)
+2. Wait for the text generation model to load (first run downloads ~350MB)
 3. Enter a prompt in the textarea
 4. Adjust temperature slider for creativity (0.1 = deterministic, 2.0 = very creative)
 5. Click "Generate" or press Ctrl+Enter
@@ -78,11 +80,26 @@ smoltalk/
 
 ## Model Information
 
-**Model**: SmolRP-135M-v0.9
-- **Source**: [Real-Turf/SmolRP-135M-v0.9](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9)
-- **Parameters**: 135M
+**Current Model**: GPT-2
+- **Source**: [OpenAI GPT-2](https://huggingface.co/gpt2)
+- **Parameters**: 124M
 - **Task**: Text Generation / Language Modeling
-- **Framework**: Transformers (PyTorch)
+- **Format**: ONNX-optimized for browser inference
+
+### Using Custom Models
+
+Edit `src/modelLoader.js` to use different models:
+
+```javascript
+const modelId = 'your-username/your-model-name';
+textGenPipeline = await pipeline('text-generation', modelId);
+```
+
+Recommended browser-compatible models:
+- `gpt2` - Fast, lightweight
+- `distilgpt2` - Even smaller
+- `facebook/opt-125m` - Larger capacity
+- Custom ONNX-converted models
 
 ### Output Format
 
