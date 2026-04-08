@@ -63,11 +63,11 @@ const chunkCache = {
     const url = typeof req === 'string' ? req : req.url
     const db = await getDB()
     const cached = await idbGet(db, url)
-    if (cached) return new Response(cached, { status: 200, headers: { 'Content-Type': 'application/octet-stream' } })
+    if (cached) return new Response(cached, { status: 200, headers: { 'Content-Type': 'application/octet-stream', 'Content-Length': String(cached.byteLength) } })
     if (url.includes('/onnx/') || url.endsWith('.onnx')) {
       const buf = await fetchOnnxModel(url)
       await idbPut(db, url, buf)
-      return new Response(buf, { status: 200, headers: { 'Content-Type': 'application/octet-stream' } })
+      return new Response(buf, { status: 200, headers: { 'Content-Type': 'application/octet-stream', 'Content-Length': String(buf.byteLength) } })
     }
     return undefined
   },
