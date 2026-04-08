@@ -33,7 +33,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install Python dependencies
-        run: pip install torch transformers onnx --index-url https://download.pytorch.org/whl/cpu
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers onnx
 
       - name: Convert model to ONNX
         env:
