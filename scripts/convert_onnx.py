@@ -5,7 +5,7 @@ import shutil
 import torch
 from transformers import AutoModelForCausalLM
 from huggingface_hub import hf_hub_download
-from onnxruntime.quantization import MatMul4BitsQuantizer
+from onnxruntime.quantization.matmul_nbits_quantizer import MatMulNBitsQuantizer
 
 model_id = "Real-Turf/SmolRP-135M-v0.9"
 output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smolrp-135m"
@@ -64,7 +64,7 @@ fp32_mb = os.path.getsize(fp32_path) / 1024 / 1024
 print(f"FP32 ONNX: {fp32_mb:.1f}MB")
 
 print("Quantizing to INT4 (Q4F16)...")
-quantizer = MatMul4BitsQuantizer(fp32_path, block_size=32, is_symmetric=True, accuracy_level=4)
+quantizer = MatMulNBitsQuantizer(fp32_path, block_size=32, n_bits=4, is_symmetric=True, accuracy_level=4)
 quantizer.process()
 quantizer.model.save_model_to_file(onnx_path, use_external_data_format=False)
 os.remove(fp32_path)
