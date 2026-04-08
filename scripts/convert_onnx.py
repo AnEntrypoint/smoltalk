@@ -10,35 +10,39 @@ tmp_dir = output_dir + "_tmp"
 
 os.makedirs(output_dir, exist_ok=True)
 
-print(f"Exporting {model_id} to ONNX INT4 via optimum...")
-result = subprocess.run([
+print(f"Exporting {model_id} to FP16 ONNX via optimum...")
+subprocess.run([
     "optimum-cli", "export", "onnx",
     "--model", model_id,
     "--task", "text-generation",
-    "--dtype", "int4",
+    "--dtype", "fp16",
     "--trust-remote-code",
     tmp_dir
 ], check=True)
 
-onnx_src = os.path.join(tmp_dir, "onnx", "model.onnx")
-if not os.path.exists(onnx_src):
-    onnx_src = os.path.join(tmp_dir, "model.onnx")
-
-if not os.path.exists(onnx_src):
-    candidates = []
+fp16_path = os.path.join(tmp_dir, "model.onnx")
+if not os.path.exists(fp16_path):
     for root, dirs, files in os.walk(tmp_dir):
         for f in files:
             if f.endswith(".onnx"):
-                candidates.append(os.path.join(root, f))
-    raise RuntimeError(f"No model.onnx found. Found: {candidates}")
+                fp16_path = os.path.join(root, f)
+                break
 
-mb = os.path.getsize(onnx_src) / 1024 / 1024
-print(f"Exported ONNX: {mb:.1f}MB")
-if mb >= 100:
-    raise RuntimeError(f"Model is {mb:.1f}MB, exceeds 100MB GitHub Pages limit")
+fp16_mb = os.path.getsize(fp16_path) / 1024 / 1024
+print(f"FP16 ONNX: {fp16_mb:.1f}MB")
 
-onnx_dst = os.path.join(output_dir, "model.onnx")
-shutil.copy(onnx_src, onnx_dst)
+from onnxruntime.quantization.matmul_nbits_quantizer import MatMulNBitsQuantizer
+onnx_path = os.path.join(output_dir, "model.onnx")
+
+print("Quantizing FP16 to INT4 (MatMulNBits)...")
+quantizer = MatMulNBitsQuantizer(fp16_path, 4, 32, is_symmetric=True)
+quantizer.process()
+quantizer.model.save_model_to_file(onnx_path, use_external_data_format=False)
+
+q_mb = os.path.getsize(onnx_path) / 1024 / 1024
+print(f"INT4 ONNX: {q_mb:.1f}MB")
+if q_mb >= 100:
+    raise RuntimeError(f"Model is {q_mb:.1f}MB, exceeds 100MB GitHub Pages limit")
 
 for fname in ["config.json", "generation_config.json", "tokenizer.json",
               "tokenizer_config.json", "vocab.json", "merges.txt", "special_tokens_map.json"]:
@@ -61,9 +65,9 @@ if "model" in tok and "merges" in tok["model"]:
         json.dump(tok, f, ensure_ascii=False)
     print("Fixed tokenizer.json merges format")
 
-total_bytes = os.path.getsize(onnx_dst)
+total_bytes = os.path.getsize(onnx_path)
 manifest = {"chunks": 1, "total_bytes": total_bytes}
 with open(os.path.join(output_dir, "model.onnx.manifest.json"), "w") as f:
     json.dump(manifest, f)
 
-print(f"Done: {onnx_dst} ({mb:.1f}MB)")
+print(f"Done: {onnx_path} ({q_mb:.1f}MB)")
