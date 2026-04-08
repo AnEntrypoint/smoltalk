@@ -33,7 +33,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install Python dependencies
-        run: pip install "optimum[exporters]" onnx onnxruntime
+        run: |
+          pip install "optimum[exporters]" onnx onnxruntime
+          python -c "import optimum.exporters.onnx; print('onnx exporter available')"
 
       - name: Convert model to ONNX
         env:
