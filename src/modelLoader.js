@@ -2,7 +2,7 @@ import { pipeline } from '@xenova/transformers'
 
 let textGenPipeline = null
 
-const MODEL_PATH = import.meta.env.BASE_URL + 'models/smolrp-135m/'
+const MODEL_PATH = window.location.origin + import.meta.env.BASE_URL + 'models/smolrp-135m/'
 
 export async function initTextGenModel(onProgress) {
   if (textGenPipeline) return textGenPipeline
