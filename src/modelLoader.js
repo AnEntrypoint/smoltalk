@@ -11,38 +11,57 @@ const HF_TOKEN = import.meta.env.VITE_HF_TOKEN || '';
 /**
  * Initialize the text generation model
  * Uses SmolRP-135M-v0.9 from HuggingFace via Transformers.js
+ * Model is pre-cached via GitHub Actions and served from GitHub Pages
  */
 export async function initTextGenModel() {
   if (textGenPipeline) return textGenPipeline;
 
   console.log('Initializing SmolRP-135M-v0.9 model...');
   try {
-    // Configure Transformers.js with HF token for private/gated models
-    if (HF_TOKEN) {
-      console.log('Using HuggingFace API token');
-    }
-
-    // Load the SmolRP model
-    // Note: This model may require accepting the license on HuggingFace
-    textGenPipeline = await pipeline(
-      'text-generation',
-      'Real-Turf/SmolRP-135M-v0.9',
-      {
-        quantized: true,
-        progress_callback: (status) => {
-          if (status.status === 'downloading') {
-            console.log(`Downloading: ${Math.round(status.progress * 100)}%`);
-          } else if (status.status === 'progress') {
-            console.log(`Loading: ${Math.round(status.progress * 100)}%`);
-          }
+    // Try to load from local cache first (GitHub Pages)
+    // Falls back to HuggingFace if cache doesn't exist
+    const modelConfig = {
+      progress_callback: (status) => {
+        if (status.status === 'downloading') {
+          const percent = Math.round((status.progress || 0) * 100);
+          console.log(`Downloading: ${percent}%`);
+        } else if (status.status === 'progress') {
+          const percent = Math.round((status.progress || 0) * 100);
+          console.log(`Loading: ${percent}%`);
         }
       }
+    };
+
+    // If running on GitHub Pages, try cached location first
+    if (typeof window !== 'undefined' &&
+        (window.location.hostname.includes('github.io') ||
+         window.location.pathname.includes('smoltalk'))) {
+      try {
+        console.log('Attempting to load from GitHub Pages cache...');
+        textGenPipeline = await pipeline(
+          'text-generation',
+          '/smoltalk/models/smolrp-135m/',
+          modelConfig
+        );
+        console.log('✓ Model loaded from GitHub Pages cache');
+        return textGenPipeline;
+      } catch (cacheError) {
+        console.warn('Cache load failed, falling back to HuggingFace...');
+      }
+    }
+
+    // Load from HuggingFace (with token if available)
+    const modelId = 'Real-Turf/SmolRP-135M-v0.9';
+    textGenPipeline = await pipeline(
+      'text-generation',
+      modelId,
+      modelConfig
     );
 
-    console.log('✓ SmolRP-135M-v0.9 model loaded');
+    console.log('✓ SmolRP-135M-v0.9 model loaded from HuggingFace');
     return textGenPipeline;
   } catch (error) {
-    console.error('Failed to load model:', error);
+    console.error('Failed to load model:', error.message);
     // Fallback to demo mode if model fails to load
     console.warn('Falling back to demo mode...');
     textGenPipeline = 'demo';

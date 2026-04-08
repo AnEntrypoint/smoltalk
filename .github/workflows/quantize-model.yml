@@ -1,0 +1,97 @@
+name: Pre-cache Model for GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/quantize-model.yml'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  cache-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install huggingface_hub
+          npm install -g @xenova/transformers
+
+      - name: Download and prepare model
+        env:
+          HF_TOKEN: ${{ secrets.VITE_HF_TOKEN }}
+        run: |
+          mkdir -p public/models
+          python3 << 'EOF'
+          import os
+          import json
+          from pathlib import Path
+          from huggingface_hub import snapshot_download
+
+          model_id = "Real-Turf/SmolRP-135M-v0.9"
+          cache_dir = "public/models/smolrp-135m"
+
+          print(f"Downloading {model_id}...")
+          repo_path = snapshot_download(
+              model_id,
+              cache_dir=cache_dir,
+              repo_type="model",
+              token=os.getenv("HF_TOKEN")
+          )
+
+          print(f"Model downloaded to {repo_path}")
+
+          # List files
+          model_dir = Path(cache_dir)
+          print(f"\nModel contents:")
+          total_size = 0
+          for file in sorted(model_dir.rglob("*")):
+              if file.is_file():
+                  size = file.stat().st_size
+                  total_size += size
+                  rel_path = file.relative_to(model_dir)
+                  size_mb = size / (1024 * 1024)
+                  print(f"  {rel_path}: {size_mb:.2f}MB")
+
+          print(f"\nTotal size: {total_size / (1024 * 1024 * 1024):.2f}GB")
+          EOF
+
+      - name: Validate model integrity
+        run: |
+          if [ -f "public/models/smolrp-135m/config.json" ]; then
+            echo "✓ Model config found"
+            cat public/models/smolrp-135m/config.json | head -20
+          fi
+          if [ -f "public/models/smolrp-135m/pytorch_model.bin" ]; then
+            echo "✓ Model weights found"
+            ls -lh public/models/smolrp-135m/pytorch_model.bin
+          fi
+
+      - name: Commit model
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/models/
+          git commit -m "Pre-cache SmolRP-135M model for instant loading" || echo "No changes"
+          git push || echo "Nothing to push"
+
+      - name: Report
+        run: |
+          echo "Model cached and ready for GitHub Pages!"
+          echo "Model will be served from: https://anentrypoint.github.io/smoltalk/models/smolrp-135m/"
