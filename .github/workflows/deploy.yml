@@ -34,8 +34,8 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install "torch==2.1.2" --index-url https://download.pytorch.org/whl/cpu
-          pip install "optimum[exporters]==1.23.3" onnx onnxruntime
+          pip install "torch==2.2.2+cpu" --index-url https://download.pytorch.org/whl/cpu
+          pip install "optimum[exporters]==1.23.3" onnx onnxruntime onnxscript
 
       - name: Convert model to ONNX
         env:
@@ -44,6 +44,7 @@ jobs:
           python -m optimum.exporters.onnx \
             -m Real-Turf/SmolRP-135M-v0.9 \
             --task text-generation-with-past \
+            --no-post-process \
             public/models/smolrp-135m/
 
       - name: Install dependencies
