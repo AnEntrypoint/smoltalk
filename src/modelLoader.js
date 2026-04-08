@@ -46,6 +46,7 @@ const chunkCache = {
 
 env.localModelPath = window.location.origin + import.meta.env.BASE_URL + 'models/'
 env.allowRemoteModels = false
+env.useBrowserCache = false
 env.useCustomCache = true
 env.customCache = chunkCache
 
