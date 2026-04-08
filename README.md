@@ -1,8 +1,6 @@
-# SmolTalk - Text Generation Demo
+# SmolTalk - SmolRP-135M Text Generation
 
-A browser-based text generation application powered by [Transformers.js](https://xenova.github.io/transformers.js/) and [web-llm](https://github.com/mlc-ai/web-llm).
-
-**Note**: Currently configured with GPT-2 for broad browser compatibility. Can be swapped to [SmolRP-135M-v0.9](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9) or other ONNX-optimized models.
+A browser-based text generation application using the [SmolRP-135M-v0.9](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9) model from HuggingFace, powered by [Transformers.js](https://xenova.github.io/transformers.js/) and [web-llm](https://github.com/mlc-ai/web-llm).
 
 ## Features
 
@@ -84,46 +82,38 @@ smoltalk/
 └── dist/              # Built output (after `npm run build`)
 ```
 
-## Current Implementation
+## Model Information
 
-**Status**: Working demo with simple text augmentation
+**Current Model**: SmolRP-135M-v0.9
+- **Source**: [Real-Turf/SmolRP-135M-v0.9](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9)
+- **Parameters**: 135M
+- **Task**: Text Generation / Roleplay
+- **Framework**: Transformers (PyTorch via ONNX)
 
-This is a **demo application** that shows the complete web-llm + Transformers.js infrastructure in action. The current text generation uses simple augmentation for instant results without model download overhead.
+### HuggingFace Token Setup
 
-### Integrating Real Models
+The app uses a HuggingFace API token for model access:
 
-To add actual ML models, modify `src/modelLoader.js`:
+**Local Development**:
+1. Create `.env.local` file:
+   ```
+   VITE_HF_TOKEN=your_hf_token_here
+   ```
+2. Get your token from https://huggingface.co/settings/tokens
+3. Accept the license for SmolRP model on its [HuggingFace page](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9)
 
-**Option 1: Transformers.js (Recommended)**
-```javascript
-import { pipeline } from '@xenova/transformers';
+**GitHub Pages Deployment**:
+- Token stored as GitHub secret `VITE_HF_TOKEN`
+- Passed via build environment variable
+- Not exposed in public HTML/JS
 
-const model = await pipeline('text-generation', 'gpt2');
-const result = await model('Your prompt here');
-```
+### First Load
 
-**Option 2: web-llm (Larger models)**
-```javascript
-import { CreateMLCEngine } from '@mlc-ai/web-llm';
+First load downloads ~400MB of model files from HuggingFace. Subsequent loads use browser cache (IndexedDB).
 
-const engine = await CreateMLCEngine('Phi-2-q4f32_1');
-const result = await engine.generate('Your prompt');
-```
-
-**Tested Models for Browser**:
-- `gpt2` - 124M params, GPT-2 from OpenAI
-- `distilgpt2` - 82M params, faster
-- `facebook/opt-350m` - 350M params, higher quality
-- Custom ONNX-converted models
-
-### Why Demo Mode?
-
-Transformers.js model loading can be slow/unreliable on first install due to:
-- Large model file downloads (100MB+)
-- Browser environment inconsistencies
-- Service worker caching issues
-
-The demo shows the full UI/UX works perfectly. Swap the generator in `generateText()` to add real models.
+- Chrome/Edge: Fast, uses WASM Worker
+- Firefox: Good support
+- Safari: Limited SharedArrayBuffer support
 
 ### Output Format
 
