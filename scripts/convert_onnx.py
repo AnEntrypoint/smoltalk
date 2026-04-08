@@ -5,8 +5,8 @@ import shutil
 from optimum.exporters.onnx import main_export
 from huggingface_hub import hf_hub_download
 
-model_id = "Real-Turf/SmolRP-135M-v0.9"
-output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smolrp-135m"
+model_id = "HuggingFaceTB/SmolLM2-135M-Instruct"
+output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smollm2-135m-instruct"
 CHUNK_MB = 90
 
 os.makedirs(output_dir, exist_ok=True)

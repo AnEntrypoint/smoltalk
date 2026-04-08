@@ -1,6 +1,6 @@
 import { pipeline, env } from '@huggingface/transformers'
 
-const BASE = window.location.origin + import.meta.env.BASE_URL + 'models/smolrp-135m/'
+const BASE = window.location.origin + import.meta.env.BASE_URL + 'models/smollm2-135m-instruct/'
 const DB_NAME = 'smoltalk'
 const DB_STORE = 'onnx'
 
@@ -80,6 +80,7 @@ const chunkCache = {
 }
 
 env.localModelPath = window.location.origin + import.meta.env.BASE_URL + 'models/'
+env.allowLocalModels = true
 env.allowRemoteModels = false
 env.useBrowserCache = false
 env.useCustomCache = true
@@ -98,7 +99,7 @@ export async function initTextGenModel(onProgress) {
       }
     }
   }
-  textGenPipeline = await pipeline('text-generation', 'smolrp-135m', config)
+  textGenPipeline = await pipeline('text-generation', 'smollm2-135m-instruct', config)
   return textGenPipeline
 }
 
