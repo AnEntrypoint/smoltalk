@@ -6,3 +6,4 @@ dist/
 .env.local
 .plugkit-browser-profile/
 .codeinsight
+.gm-stop-verified
