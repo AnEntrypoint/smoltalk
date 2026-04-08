@@ -7,6 +7,7 @@ import subprocess
 model_id = "Real-Turf/SmolRP-135M-v0.9"
 output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smolrp-135m"
 tmp_dir = output_dir + "_tmp"
+CHUNK_MB = 90
 
 os.makedirs(output_dir, exist_ok=True)
 
@@ -32,7 +33,7 @@ fp16_mb = os.path.getsize(fp16_path) / 1024 / 1024
 print(f"FP16 ONNX: {fp16_mb:.1f}MB")
 
 from onnxruntime.quantization.matmul_nbits_quantizer import MatMulNBitsQuantizer
-onnx_path = os.path.join(output_dir, "model.onnx")
+onnx_path = os.path.join(tmp_dir, "model_q4.onnx")
 
 print("Quantizing FP16 to INT4 (MatMulNBits)...")
 quantizer = MatMulNBitsQuantizer(fp16_path, 4, 32, is_symmetric=True)
@@ -41,8 +42,6 @@ quantizer.model.save_model_to_file(onnx_path, use_external_data_format=False)
 
 q_mb = os.path.getsize(onnx_path) / 1024 / 1024
 print(f"INT4 ONNX: {q_mb:.1f}MB")
-if q_mb >= 100:
-    raise RuntimeError(f"Model is {q_mb:.1f}MB, exceeds 100MB GitHub Pages limit")
 
 for fname in ["config.json", "generation_config.json", "tokenizer.json",
               "tokenizer_config.json", "vocab.json", "merges.txt", "special_tokens_map.json"]:
@@ -50,8 +49,6 @@ for fname in ["config.json", "generation_config.json", "tokenizer.json",
     if os.path.exists(src):
         shutil.copy(src, os.path.join(output_dir, fname))
         print(f"Copied {fname}")
-
-shutil.rmtree(tmp_dir)
 
 tok_path = os.path.join(output_dir, "tokenizer.json")
 with open(tok_path, "r", encoding="utf-8") as f:
@@ -65,9 +62,23 @@ if "model" in tok and "merges" in tok["model"]:
         json.dump(tok, f, ensure_ascii=False)
     print("Fixed tokenizer.json merges format")
 
-total_bytes = os.path.getsize(onnx_path)
-manifest = {"chunks": 1, "total_bytes": total_bytes}
+chunk_size = CHUNK_MB * 1024 * 1024
+with open(onnx_path, "rb") as f:
+    data = f.read()
+
+total_bytes = len(data)
+chunks = [data[i:i+chunk_size] for i in range(0, total_bytes, chunk_size)]
+
+for i, chunk in enumerate(chunks):
+    path = os.path.join(output_dir, f"model.onnx.part{i}")
+    with open(path, "wb") as f:
+        f.write(chunk)
+    print(f"  part{i}: {len(chunk)/1024/1024:.1f}MB")
+
+shutil.rmtree(tmp_dir)
+
+manifest = {"chunks": len(chunks), "total_bytes": total_bytes}
 with open(os.path.join(output_dir, "model.onnx.manifest.json"), "w") as f:
     json.dump(manifest, f)
 
-print(f"Done: {onnx_path} ({q_mb:.1f}MB)")
+print(f"Done: {len(chunks)} parts, {q_mb:.1f}MB total (INT4)")
