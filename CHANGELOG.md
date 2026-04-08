@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-08 (5)
+
+### Changed
+- Switched from @xenova/transformers (v2, WASM) to @huggingface/transformers (v3, WebGPU)
+- Removed unused @mlc-ai/web-llm dependency
+- convert_onnx.py: export with dtype=q4f16 (~67MB) instead of fp32 (~500MB)
+- modelLoader.js: pipeline now uses device:'webgpu', dtype:'q4f16'
+
 ## 2026-04-08 (4)
 
 ### Fixed
