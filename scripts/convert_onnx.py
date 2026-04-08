@@ -25,6 +25,18 @@ for fname in ["config.json", "generation_config.json", "tokenizer.json", "tokeni
     except Exception as e:
         print(f"Skipped {fname}: {e}")
 
+tok_path = os.path.join(output_dir, "tokenizer.json")
+with open(tok_path, "r", encoding="utf-8") as f:
+    tok = json.load(f)
+if "model" in tok and "merges" in tok["model"]:
+    tok["model"]["merges"] = [
+        " ".join(m) if isinstance(m, list) else m
+        for m in tok["model"]["merges"]
+    ]
+    with open(tok_path, "w", encoding="utf-8") as f:
+        json.dump(tok, f, ensure_ascii=False)
+    print("Fixed tokenizer.json merges format")
+
 input_ids = torch.ones((1, 5), dtype=torch.long)
 attention_mask = torch.ones((1, 5), dtype=torch.long)
 
@@ -51,7 +63,7 @@ size_mb = os.path.getsize(onnx_path) / 1024 / 1024
 print(f"ONNX: {size_mb:.1f}MB")
 
 chunk_size = CHUNK_MB * 1024 * 1024
-with open(onnx_path, 'rb') as f:
+with open(onnx_path, "rb") as f:
     data = f.read()
 
 total_bytes = len(data)
@@ -60,12 +72,12 @@ os.remove(onnx_path)
 
 for i, chunk in enumerate(chunks):
     path = os.path.join(output_dir, f"model.onnx.part{i}")
-    with open(path, 'wb') as f:
+    with open(path, "wb") as f:
         f.write(chunk)
     print(f"  part{i}: {len(chunk)/1024/1024:.1f}MB")
 
 manifest = {"chunks": len(chunks), "total_bytes": total_bytes}
-with open(os.path.join(output_dir, "model.onnx.manifest.json"), 'w') as f:
+with open(os.path.join(output_dir, "model.onnx.manifest.json"), "w") as f:
     json.dump(manifest, f)
 
 print(f"Split into {len(chunks)} parts ({total_bytes} bytes total)")

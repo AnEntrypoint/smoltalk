@@ -5,9 +5,7 @@ const BASE = window.location.origin + import.meta.env.BASE_URL + 'models/smolrp-
 async function fetchOnnxModel(url) {
   const manifestUrl = BASE + 'model.onnx.manifest.json'
   const manifestResp = await fetch(manifestUrl, { cache: 'no-store' })
-  if (!manifestResp.ok) {
-    return fetch(url)
-  }
+  if (!manifestResp.ok) throw new Error(`Manifest fetch failed: ${manifestResp.status}`)
   const { chunks, total_bytes } = await manifestResp.json()
   const parts = []
   let loaded = 0
@@ -33,7 +31,7 @@ const chunkCache = {
   async match(req) {
     const url = typeof req === 'string' ? req : req.url
     if (this._store.has(url)) return this._store.get(url).clone()
-    if (url.endsWith('model.onnx')) {
+    if (url.includes('/onnx/') || url.endsWith('.onnx')) {
       const resp = await fetchOnnxModel(url)
       this._store.set(url, resp)
       return resp.clone()
