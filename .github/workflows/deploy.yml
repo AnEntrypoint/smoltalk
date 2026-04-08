@@ -33,16 +33,15 @@ jobs:
           python-version: '3.11'
 
       - name: Install Python dependencies
-        run: pip install optimum[exporters] transformers torch --quiet
+        run: pip install "optimum[exporters]" onnx onnxruntime
 
       - name: Convert model to ONNX
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.VITE_HF_TOKEN }}
         run: |
           python -m optimum.exporters.onnx \
             -m Real-Turf/SmolRP-135M-v0.9 \
             --task text-generation-with-past \
-            --device cpu \
             public/models/smolrp-135m/
 
       - name: Install dependencies
