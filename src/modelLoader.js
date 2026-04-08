@@ -2,25 +2,25 @@
 import * as wllm from '@mlc-ai/web-llm';
 import { pipeline } from '@xenova/transformers';
 
-let emotionPipeline = null;
+let textGenPipeline = null;
 let webLLMEngine = null;
 
 /**
- * Initialize the emotion classification pipeline (Transformers.js)
+ * Initialize the text generation pipeline (Transformers.js)
  */
-export async function initEmotionModel() {
-  if (emotionPipeline) return emotionPipeline;
+export async function initTextGenModel() {
+  if (textGenPipeline) return textGenPipeline;
   
-  console.log('Initializing emotion classification model...');
+  console.log('Initializing text generation model...');
   try {
-    emotionPipeline = await pipeline(
-      'text-classification',
-      'dianak12/SmolLM2-135M-emotions'
+    textGenPipeline = await pipeline(
+      'text-generation',
+      'Real-Turf/SmolRP-135M-v0.9'
     );
-    console.log('✓ Emotion model loaded');
-    return emotionPipeline;
+    console.log('✓ SmolRP-135M model loaded');
+    return textGenPipeline;
   } catch (error) {
-    console.error('Failed to load emotion model:', error);
+    console.error('Failed to load text generation model:', error);
     throw error;
   }
 }
@@ -51,24 +51,31 @@ export async function initWebLLM() {
 }
 
 /**
- * Classify emotion for given text
+ * Generate text continuation for given prompt
  */
-export async function classifyEmotion(text) {
-  if (!emotionPipeline) {
-    await initEmotionModel();
+export async function generateText(prompt, options = {}) {
+  if (!textGenPipeline) {
+    await initTextGenModel();
   }
   
-  if (!text || text.trim().length === 0) {
-    throw new Error('Text cannot be empty');
+  if (!prompt || prompt.trim().length === 0) {
+    throw new Error('Prompt cannot be empty');
   }
   
   try {
-    const results = await emotionPipeline(text, {
-      top_k: 5  // Get top 5 emotions
-    });
+    const defaults = {
+      max_new_tokens: 100,
+      temperature: 0.7,
+      top_p: 0.95,
+      top_k: 50,
+    };
+    
+    const config = { ...defaults, ...options };
+    
+    const results = await textGenPipeline(prompt, config);
     return results;
   } catch (error) {
-    console.error('Emotion classification error:', error);
+    console.error('Text generation error:', error);
     throw error;
   }
 }
@@ -78,7 +85,7 @@ export async function classifyEmotion(text) {
  */
 export function getStatus() {
   return {
-    emotionModelReady: emotionPipeline !== null,
+    textGenModelReady: textGenPipeline !== null,
     webLLMReady: webLLMEngine !== null,
   };
 }

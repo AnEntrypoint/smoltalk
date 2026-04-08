@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmolLM2 Emotion Classifier</title>
+  <title>SmolTalk - SmolRP-135M Text Generation</title>
   <style>
     * {
       margin: 0;
@@ -12,7 +12,7 @@
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, monospace;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
       display: flex;
@@ -25,7 +25,7 @@
       background: white;
       border-radius: 12px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 600px;
+      max-width: 700px;
       width: 100%;
       padding: 40px;
     }
@@ -58,16 +58,63 @@
       padding: 12px;
       border: 2px solid #ddd;
       border-radius: 8px;
-      font-family: inherit;
+      font-family: 'Courier New', monospace;
       font-size: 14px;
       resize: vertical;
-      min-height: 100px;
+      min-height: 80px;
       transition: border-color 0.3s;
     }
     
     textarea:focus {
       outline: none;
       border-color: #667eea;
+    }
+    
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .control-group label {
+      margin-bottom: 0;
+      min-width: 100px;
+    }
+    
+    input[type="range"] {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #ddd;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #667eea;
+      cursor: pointer;
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #667eea;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .temp-display {
+      min-width: 45px;
+      text-align: right;
+      font-weight: 600;
+      color: #667eea;
     }
     
     .button-group {
@@ -87,17 +134,17 @@
       transition: all 0.3s;
     }
     
-    #analyze-btn {
+    #generate-btn {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
     }
     
-    #analyze-btn:hover:not(:disabled) {
+    #generate-btn:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
     }
     
-    #analyze-btn:disabled {
+    #generate-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
@@ -129,47 +176,50 @@
       margin-top: 20px;
     }
     
-    .results-container {
+    .result-container {
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 20px;
     }
     
-    .emotion-item {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+    .prompt-section, .generation-section {
+      border-top: 2px solid #f0f0f0;
+      padding-top: 15px;
     }
     
-    .emotion-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .emotion-label {
-      font-weight: 600;
-      color: #333;
-      text-transform: capitalize;
-    }
-    
-    .emotion-score {
+    .prompt-section h3, .generation-section h3 {
       font-size: 13px;
       color: #666;
-      font-weight: 500;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
     }
     
-    .emotion-bar {
-      height: 8px;
-      background: #f0f0f0;
+    .prompt-text {
+      color: #333;
+      line-height: 1.6;
+      font-style: italic;
+    }
+    
+    .generation-item {
+      background: #f9f9f9;
+      border-left: 3px solid #667eea;
+      padding: 12px;
       border-radius: 4px;
-      overflow: hidden;
     }
     
-    .emotion-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-      transition: width 0.3s ease;
+    pre {
+      margin: 0;
+      overflow-x: auto;
+    }
+    
+    code {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #333;
+      word-break: break-word;
+      white-space: pre-wrap;
     }
     
     .error {
@@ -188,26 +238,43 @@
       h1 {
         font-size: 22px;
       }
+      
+      .control-group {
+        flex-wrap: wrap;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎭 Emotion Classifier</h1>
-    <p class="subtitle">SmolLM2-135M with Transformers.js & web-llm</p>
+    <h1>💬 SmolTalk</h1>
+    <p class="subtitle">SmolRP-135M-v0.9 with Transformers.js & web-llm</p>
     
     <div id="status" class="status loading">Loading model...</div>
     
     <div class="input-group">
-      <label for="input-text">Enter text to analyze:</label>
+      <label for="prompt-input">Enter your prompt:</label>
       <textarea 
-        id="input-text" 
-        placeholder="Type something to analyze its emotional tone...">
+        id="prompt-input" 
+        placeholder="Start with a prompt and the model will continue the text...">
       </textarea>
     </div>
     
+    <div class="control-group">
+      <label for="temperature">Temperature:</label>
+      <input 
+        type="range" 
+        id="temperature" 
+        min="0.1" 
+        max="2" 
+        step="0.1" 
+        value="0.7"
+      >
+      <span class="temp-display" id="temp-value">0.70</span>
+    </div>
+    
     <div class="button-group">
-      <button id="analyze-btn">Analyze</button>
+      <button id="generate-btn">Generate (Ctrl+Enter)</button>
     </div>
     
     <div id="result"></div>

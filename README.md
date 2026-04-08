@@ -1,23 +1,23 @@
-# SmolLM2-135M Emotion Classifier with web-llm
+# SmolTalk - SmolRP-135M Text Generation
 
-A browser-based emotion classification application using the [SmolLM2-135M-emotions](https://huggingface.co/dianak12/SmolLM2-135M-emotions) model from Hugging Face, powered by [Transformers.js](https://xenova.github.io/transformers.js/) and [web-llm](https://github.com/mlc-ai/web-llm).
+A browser-based text generation application using the [SmolRP-135M-v0.9](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9) model from Hugging Face, powered by [Transformers.js](https://xenova.github.io/transformers.js/) and [web-llm](https://github.com/mlc-ai/web-llm).
 
 ## Features
 
 - 🚀 **In-Browser Processing**: No server required, all inference runs in your browser
-- 🤖 **Emotion Classification**: Analyze text to detect emotions (joy, sadness, anger, fear, surprise, etc.)
+- 📝 **Text Generation**: Continue prompts with contextual, creative text completions
 - ⚡ **Fast Inference**: Optimized for 135M parameter model
-- 🎨 **Modern UI**: Clean, responsive interface with visual emotion probability bars
+- 🎨 **Modern UI**: Clean interface with temperature control for output variety
 - 🔧 **web-llm Integration**: Full setup with web-llm engine for extensibility
 
 ## Architecture
 
 This project combines two powerful libraries:
 
-1. **Transformers.js** - Loads the HuggingFace SmolLM2 emotion model directly in the browser
+1. **Transformers.js** - Loads the HuggingFace SmolRP-135M model directly in the browser
 2. **web-llm** - Provides LLM capabilities and serves as the foundation for this application
 
-The emotion classifier runs entirely client-side using ONNX.js for inference.
+The text generation runs entirely client-side using ONNX.js for inference.
 
 ## Installation
 
@@ -29,7 +29,7 @@ The emotion classifier runs entirely client-side using ONNX.js for inference.
 
 ```bash
 # Clone or download the project
-cd smollm2-emotions-demo
+cd smoltalk
 
 # Install dependencies
 npm install
@@ -43,22 +43,30 @@ The dev server will start at `https://localhost:5173` (Vite uses HTTPS for Share
 ## Usage
 
 1. Open the app in your browser
-2. Wait for the emotion model to load (first run may take a moment as it downloads the model)
-3. Enter text in the textarea
-4. Click "Analyze" or press Enter
-5. View the emotion probabilities with visual bars
+2. Wait for the SmolRP model to load (first run may take a moment as it downloads the model)
+3. Enter a prompt in the textarea
+4. Adjust temperature slider for creativity (0.1 = deterministic, 2.0 = very creative)
+5. Click "Generate" or press Ctrl+Enter
+6. View the generated text continuation
 
-### Example Inputs
+### Example Prompts
 
-- "I'm so happy today!" → Joy
-- "This is terrible and I hate it" → Anger
-- "I can't believe what just happened" → Surprise
-- "Life is meaningless" → Sadness
+- "The sun rose over the mountain and"
+- "In a galaxy far far away, there was"
+- "She opened the ancient book and found"
+- "The best time to visit Paris is"
+
+### Temperature Guide
+
+- **0.1 - 0.5**: Focused, coherent, predictable outputs
+- **0.5 - 0.9**: Balanced creativity and coherence
+- **0.9 - 1.5**: Creative, varied outputs
+- **1.5 - 2.0**: Very creative, may be less coherent
 
 ## Project Structure
 
 ```
-smollm2-emotions-demo/
+smoltalk/
 ├── index.html          # Main UI
 ├── package.json        # Dependencies
 ├── vite.config.js      # Build configuration
@@ -70,22 +78,20 @@ smollm2-emotions-demo/
 
 ## Model Information
 
-**Model**: SmolLM2-135M-emotions
-- **Source**: [dianak12/SmolLM2-135M-emotions](https://huggingface.co/dianak12/SmolLM2-135M-emotions)
+**Model**: SmolRP-135M-v0.9
+- **Source**: [Real-Turf/SmolRP-135M-v0.9](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9)
 - **Parameters**: 135M
-- **Task**: Text Classification (Emotion Detection)
+- **Task**: Text Generation / Language Modeling
 - **Framework**: Transformers (PyTorch)
 
 ### Output Format
 
-The model returns emotion classifications with confidence scores:
+The model returns generated text continuation:
 
 ```javascript
 [
-  { label: 'joy', score: 0.85 },
-  { label: 'neutral', score: 0.10 },
-  { label: 'sadness', score: 0.03 },
-  { label: 'anger', score: 0.02 }
+  { generated_text: "Your prompt here continued text..." },
+  { generated_text: "Alternative continuation..." }
 ]
 ```
 
@@ -93,7 +99,7 @@ The model returns emotion classifications with confidence scores:
 
 - **First Load**: 10-30 seconds (downloads ~400MB model files from HuggingFace)
 - **Subsequent Loads**: Cached in browser (localStorage and IndexedDB)
-- **Inference Speed**: 100-500ms per text (depends on text length and hardware)
+- **Generation Speed**: 1-5 seconds per output (depends on token count and hardware)
 - **Browser Support**: Chrome, Firefox, Edge (requires WebAssembly and SharedArrayBuffer)
 
 ## Troubleshooting
@@ -109,9 +115,9 @@ The model returns emotion classifications with confidence scores:
 - Try a different browser (Chrome recommended)
 - Ensure you're accessing via HTTPS (the dev server uses HTTPS)
 
-### Slow inference
+### Slow generation
 - Close other browser tabs to free up resources
-- Reduce text length for faster analysis
+- Reduce temperature for faster outputs
 - Check browser console for warnings
 
 ### CORS or model download errors
@@ -148,19 +154,30 @@ Key settings for web-llm compatibility:
 
 ### Model Configuration (`src/modelLoader.js`)
 
-Customize the emotion model or add additional models:
+Customize generation parameters:
 
 ```javascript
-// Use a different emotion model from HuggingFace
-emotionPipeline = await pipeline(
-  'text-classification',
-  'your-username/your-emotion-model'
+const results = await generateText(prompt, {
+  max_new_tokens: 150,      // Maximum tokens to generate
+  temperature: 0.7,          // Sampling temperature
+  top_p: 0.95,               // Nucleus sampling
+  top_k: 50,                 // Top-k sampling
+});
+```
+
+### Use Different Model
+
+```javascript
+// Use a different model from HuggingFace
+textGenPipeline = await pipeline(
+  'text-generation',
+  'username/model-name'
 );
 ```
 
 ## Extended Usage with web-llm
 
-The project includes optional web-llm integration for text generation:
+The project includes optional web-llm integration for additional capabilities:
 
 ```javascript
 import { initWebLLM } from './modelLoader.js';
@@ -168,8 +185,7 @@ import { initWebLLM } from './modelLoader.js';
 // Initialize web-llm engine
 const engine = await initWebLLM();
 
-// Generate text based on detected emotion
-const message = await engine.generate('Continue this thought...');
+// Use web-llm models for different tasks
 ```
 
 Currently configured with the Phi-2-q4f32 model. See [web-llm models](https://github.com/mlc-ai/web-llm?tab=readme-ov-file#supported-models) for alternatives.
@@ -190,20 +206,10 @@ Currently configured with the Phi-2-q4f32 model. See [web-llm models](https://gi
 - **vite**: ^5.0.0 - Build tool
 - **@vitejs/plugin-basic-ssl**: ^1.1.0 - HTTPS for dev server
 
-## Performance Optimization
-
-To use web-llm models instead of Transformers.js (smaller, quantized models):
-
-1. Convert SmolLM2-135M using [mlc-llm](https://github.com/mlc-ai/mlc-llm) tools
-2. Add the converted model to web-llm model zoo
-3. Update `modelLoader.js` to load via web-llm
-
-This approach yields smaller bundle sizes but requires pre-conversion.
-
 ## License
 
 This demo project is provided as-is. Check licenses for:
-- SmolLM2 model (original license on HuggingFace)
+- SmolRP-135M model (original license on HuggingFace)
 - web-llm (Apache 2.0)
 - Transformers.js (MIT)
 
@@ -211,15 +217,15 @@ This demo project is provided as-is. Check licenses for:
 
 - [web-llm Documentation](https://mlc.ai/web-llm/)
 - [Transformers.js Docs](https://xenova.github.io/transformers.js/)
-- [SmolLM2 Model Card](https://huggingface.co/dianak12/SmolLM2-135M-emotions)
+- [SmolRP Model Card](https://huggingface.co/Real-Turf/SmolRP-135M-v0.9)
 - [HuggingFace Models](https://huggingface.co)
 
 ## Next Steps
 
 Consider extending this demo with:
-- [ ] Multi-language emotion detection
-- [ ] Sentiment analysis alongside emotions
-- [ ] Text generation based on emotion
-- [ ] Export results to CSV/JSON
-- [ ] Real-time emotion tracking for long texts
-- [ ] Voice input using Web Audio API
+- [ ] Multiple model support
+- [ ] Output sampling strategies
+- [ ] Conversation history
+- [ ] Export generations to file
+- [ ] Fine-tuning on specific datasets
+- [ ] Voice input/output using Web Audio API

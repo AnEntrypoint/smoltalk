@@ -1,7 +1,7 @@
 {
-  "name": "smollm2-emotions-demo",
+  "name": "smoltalk",
   "version": "0.1.0",
-  "description": "SmolLM2-135M emotions model demo with web-llm and Transformers.js",
+  "description": "SmolRP-135M-v0.9 text generation demo with web-llm and Transformers.js",
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
@@ -16,5 +16,9 @@
   "devDependencies": {
     "vite": "^5.0.0",
     "@vitejs/plugin-basic-ssl": "^1.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AnEntrypoint/smoltalk"
   }
 }

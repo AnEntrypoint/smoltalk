@@ -1,11 +1,12 @@
-import { initEmotionModel, classifyEmotion, getStatus } from './modelLoader.js';
+import { initTextGenModel, generateText, getStatus } from './modelLoader.js';
 
 // UI Elements
-const inputText = document.getElementById('input-text');
-const analyzeBtn = document.getElementById('analyze-btn');
+const promptInput = document.getElementById('prompt-input');
+const generateBtn = document.getElementById('generate-btn');
 const resultDiv = document.getElementById('result');
-const loadingDiv = document.getElementById('loading');
 const statusDiv = document.getElementById('status');
+const tempSlider = document.getElementById('temperature');
+const tempValue = document.getElementById('temp-value');
 
 let modelReady = false;
 
@@ -13,13 +14,13 @@ let modelReady = false;
  * Initialize the application
  */
 async function initApp() {
-  console.log('Initializing application...');
-  updateStatus('Loading emotion model...', 'loading');
+  console.log('Initializing SmolTalk...');
+  updateStatus('Loading text generation model...', 'loading');
   
   try {
-    await initEmotionModel();
+    await initTextGenModel();
     modelReady = true;
-    updateStatus('Ready for analysis', 'ready');
+    updateStatus('Ready to generate text', 'ready');
     console.log('✓ App initialized');
   } catch (error) {
     updateStatus('Failed to load model: ' + error.message, 'error');
@@ -28,13 +29,13 @@ async function initApp() {
 }
 
 /**
- * Analyze text for emotions
+ * Generate text from prompt
  */
-async function analyzeText() {
-  const text = inputText.value.trim();
+async function generateResponse() {
+  const prompt = promptInput.value.trim();
   
-  if (!text) {
-    alert('Please enter some text');
+  if (!prompt) {
+    alert('Please enter a prompt');
     return;
   }
   
@@ -43,48 +44,55 @@ async function analyzeText() {
     return;
   }
   
-  analyzeBtn.disabled = true;
-  updateStatus('Analyzing...', 'loading');
+  generateBtn.disabled = true;
+  updateStatus('Generating...', 'loading');
   resultDiv.innerHTML = '';
   
   try {
-    const emotions = await classifyEmotion(text);
-    displayResults(emotions);
-    updateStatus('Analysis complete', 'ready');
+    const temperature = parseFloat(tempSlider.value);
+    const results = await generateText(prompt, {
+      max_new_tokens: 150,
+      temperature: temperature,
+      top_p: 0.95,
+    });
+    
+    displayResults(prompt, results);
+    updateStatus('Generation complete', 'ready');
   } catch (error) {
     resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-    updateStatus('Analysis failed', 'error');
-    console.error('Analysis error:', error);
+    updateStatus('Generation failed', 'error');
+    console.error('Generation error:', error);
   } finally {
-    analyzeBtn.disabled = false;
+    generateBtn.disabled = false;
   }
 }
 
 /**
- * Display emotion classification results
+ * Display generated text results
  */
-function displayResults(emotions) {
-  let html = '<div class="results-container">';
+function displayResults(prompt, results) {
+  let html = '<div class="result-container">';
   
-  emotions.forEach((emotion, index) => {
-    const label = emotion.label;
-    const score = (emotion.score * 100).toFixed(2);
-    const barWidth = emotion.score * 100;
+  html += '<div class="prompt-section">';
+  html += '<h3>Prompt:</h3>';
+  html += '<p class="prompt-text">' + escapeHtml(prompt) + '</p>';
+  html += '</div>';
+  
+  html += '<div class="generation-section">';
+  html += '<h3>Generated Text:</h3>';
+  
+  results.forEach((result, index) => {
+    const text = result.generated_text;
+    const generated = text.substring(prompt.length);
     
-    html += `
-      <div class="emotion-item">
-        <div class="emotion-header">
-          <span class="emotion-label">${label}</span>
-          <span class="emotion-score">${score}%</span>
-        </div>
-        <div class="emotion-bar">
-          <div class="emotion-bar-fill" style="width: ${barWidth}%"></div>
-        </div>
-      </div>
-    `;
+    html += '<div class="generation-item">';
+    html += '<pre><code>' + escapeHtml(generated) + '</code></pre>';
+    html += '</div>';
   });
   
   html += '</div>';
+  html += '</div>';
+  
   resultDiv.innerHTML = html;
 }
 
@@ -97,11 +105,27 @@ function updateStatus(message, state) {
 }
 
 /**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * Update temperature display
+ */
+tempSlider.addEventListener('input', (e) => {
+  tempValue.textContent = parseFloat(e.target.value).toFixed(2);
+});
+
+/**
  * Event listeners
  */
-analyzeBtn.addEventListener('click', analyzeText);
-inputText.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') analyzeText();
+generateBtn.addEventListener('click', generateResponse);
+promptInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter' && e.ctrlKey) generateResponse();
 });
 
 // Initialize on page load
