@@ -5,7 +5,7 @@ import shutil
 import torch
 from transformers import AutoModelForCausalLM
 from huggingface_hub import hf_hub_download
-from onnxruntime.quantization.matmul_nbits_quantizer import MatMulNBitsQuantizer
+from onnxruntime.quantization import quantize_dynamic, QuantType
 
 model_id = "Real-Turf/SmolRP-135M-v0.9"
 output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smolrp-135m"
@@ -63,14 +63,12 @@ with torch.no_grad():
 fp32_mb = os.path.getsize(fp32_path) / 1024 / 1024
 print(f"FP32 ONNX: {fp32_mb:.1f}MB")
 
-print("Quantizing to INT4 (Q4F16)...")
-quantizer = MatMulNBitsQuantizer(fp32_path, block_size=32, n_bits=4, is_symmetric=True, accuracy_level=4)
-quantizer.process()
-quantizer.model.save_model_to_file(onnx_path, use_external_data_format=False)
+print("Quantizing to INT4...")
+quantize_dynamic(fp32_path, onnx_path, weight_type=QuantType.QInt4)
 os.remove(fp32_path)
 
 q4_mb = os.path.getsize(onnx_path) / 1024 / 1024
-print(f"Q4F16 ONNX: {q4_mb:.1f}MB")
+print(f"INT4 ONNX: {q4_mb:.1f}MB")
 if q4_mb >= 100:
     raise RuntimeError(f"Quantized model is {q4_mb:.1f}MB, exceeds 100MB GitHub Pages limit")
 
@@ -79,4 +77,4 @@ manifest = {"chunks": 1, "total_bytes": total_bytes}
 with open(os.path.join(output_dir, "model.onnx.manifest.json"), "w") as f:
     json.dump(manifest, f)
 
-print(f"Done: {onnx_path} ({q4_mb:.1f}MB)")
+print(f"Done: {onnx_path} ({q4_mb:.1f}MB, INT4)")
