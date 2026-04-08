@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-08 (4)
+
+### Fixed
+- convert_onnx.py: replaced torch.onnx.export (logits-only, no KV cache) with optimum main_export (text-generation-with-past) so Transformers.js gets proper past_key_values for autoregressive decoding — fixes incoherent/repetitive generation
+- deploy.yml: install optimum[onnxruntime] instead of bare torch+onnxruntime stack
+
 ## 2026-04-08
 
 ### Fixed
