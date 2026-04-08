@@ -75,6 +75,7 @@ export async function generateText(prompt, options = {}) {
     temperature: 0.7,
     top_p: 0.95,
     top_k: 50,
+    repetition_penalty: 1.3,
     ...options
   })
   return result
