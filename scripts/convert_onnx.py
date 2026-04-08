@@ -1,7 +1,9 @@
 import sys
 import os
+import shutil
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoModelForCausalLM
+from huggingface_hub import hf_hub_download
 
 model_id = "Real-Turf/SmolRP-135M-v0.9"
 output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smolrp-135m"
@@ -9,15 +11,20 @@ output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smolrp-135m"
 os.makedirs(output_dir, exist_ok=True)
 
 print(f"Loading model {model_id}...")
-tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float32)
 model.eval()
 
-tokenizer.save_pretrained(output_dir)
+print("Downloading tokenizer files directly...")
+for fname in ["tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt", "special_tokens_map.json"]:
+    try:
+        path = hf_hub_download(repo_id=model_id, filename=fname)
+        shutil.copy(path, os.path.join(output_dir, fname))
+        print(f"Copied {fname}")
+    except Exception as e:
+        print(f"Skipped {fname}: {e}")
 
-sample_input = tokenizer("Hello", return_tensors="pt")
-input_ids = sample_input["input_ids"]
-attention_mask = sample_input["attention_mask"]
+input_ids = torch.ones((1, 5), dtype=torch.long)
+attention_mask = torch.ones((1, 5), dtype=torch.long)
 
 print("Exporting ONNX (legacy TorchScript path)...")
 with torch.no_grad():
