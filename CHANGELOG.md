@@ -15,6 +15,6 @@
 ## 2026-04-08 (3)
 
 ### Changed
-- convert_onnx.py: replaced FP32 export+chunking with INT4 Q4F16 quantization via MatMul4BitsQuantizer (~64MB single file)
-- deploy.yml: added onnxruntime>=1.17 pip dependency for INT4 quantization support
-- model.onnx.manifest.json now emitted with chunks:1 (no reassembly loop needed)
+- convert_onnx.py: export FP16 ONNX via optimum then apply MatMulNBitsQuantizer INT4 — 128MB total in 2 × 90MB chunks
+- deploy.yml: optimum[onnxruntime] + onnx-ir deps for FP16 export and INT4 quantization
+- model.onnx.manifest.json chunks:2 (FP16+INT4 quantized, each part under 90MB)
