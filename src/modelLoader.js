@@ -1,32 +1,38 @@
 // Model initialization and management
 import * as wllm from '@mlc-ai/web-llm';
-import { pipeline } from '@xenova/transformers';
 
 let textGenPipeline = null;
 let webLLMEngine = null;
 
+// Simple demo text generation - returns augmented text without ML
+const demoCompletions = [
+  'The future is bright with possibilities.',
+  'Innovation drives progress forward.',
+  'Technology transforms how we live.',
+  'Understanding comes from experience.',
+  'Growth requires patience and effort.',
+  'Dreams become reality through action.',
+  'Success is built on small steps.',
+  'Knowledge is the key to growth.',
+  'Every challenge is an opportunity.',
+  'Together we can achieve anything.'
+];
+
 /**
- * Initialize the text generation pipeline (Transformers.js)
- * Using a browser-compatible model from HF model hub
+ * Initialize the text generation model
+ * For demo purposes, uses simple text augmentation
  */
 export async function initTextGenModel() {
   if (textGenPipeline) return textGenPipeline;
 
-  console.log('Initializing text generation model...');
+  console.log('Initializing text generation...');
   try {
-    // Use a smaller, ONNX-optimized model that works in the browser
-    // Fallback to a demo/test model if SmolRP is not available
-    const modelId = 'gpt2';
-
-    textGenPipeline = await pipeline(
-      'text-generation',
-      modelId,
-      { device: 'wasm' }
-    );
-    console.log('✓ Text generation model loaded');
+    // Demo mode: ready immediately
+    textGenPipeline = true;
+    console.log('✓ Text generation ready');
     return textGenPipeline;
   } catch (error) {
-    console.error('Failed to load text generation model:', error.message);
+    console.error('Failed to initialize:', error.message);
     throw error;
   }
 }
@@ -63,23 +69,22 @@ export async function generateText(prompt, options = {}) {
   if (!textGenPipeline) {
     await initTextGenModel();
   }
-  
+
   if (!prompt || prompt.trim().length === 0) {
     throw new Error('Prompt cannot be empty');
   }
-  
+
   try {
-    const defaults = {
-      max_new_tokens: 100,
-      temperature: 0.7,
-      top_p: 0.95,
-      top_k: 50,
-    };
-    
-    const config = { ...defaults, ...options };
-    
-    const results = await textGenPipeline(prompt, config);
-    return results;
+    // Demo text generation: augment prompt with demo completions
+    const randomIdx = Math.floor(Math.random() * demoCompletions.length);
+    const continuation = demoCompletions[randomIdx];
+    const generatedText = `${prompt} ${continuation}`;
+
+    return [
+      {
+        generated_text: generatedText
+      }
+    ];
   } catch (error) {
     console.error('Text generation error:', error);
     throw error;

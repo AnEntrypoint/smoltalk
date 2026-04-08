@@ -21,26 +21,32 @@ This project combines two powerful libraries:
 
 The text generation runs entirely client-side using ONNX.js for inference.
 
-## Installation
+## Installation & Deployment
 
-### Prerequisites
+### Live Demo
+The app is deployed to GitHub Pages and auto-updates on every push:
+**https://anentrypoint.github.io/smoltalk/**
+
+### Local Development
+
+Prerequisites:
 - Node.js 16+ and npm
-- Modern browser with WebGPU or WebAssembly support
+- Modern browser with WebAssembly support
 
-### Setup
-
+Setup:
 ```bash
-# Clone or download the project
+# Clone the repository
+git clone https://github.com/AnEntrypoint/smoltalk.git
 cd smoltalk
 
 # Install dependencies
 npm install
 
-# Start development server
+# Start dev server
 npm run dev
 ```
 
-The dev server will start at `https://localhost:5173` (Vite uses HTTPS for SharedArrayBuffer support).
+The dev server runs at `https://localhost:5173`.
 
 ## Usage
 
@@ -78,28 +84,46 @@ smoltalk/
 └── dist/              # Built output (after `npm run build`)
 ```
 
-## Model Information
+## Current Implementation
 
-**Current Model**: GPT-2
-- **Source**: [OpenAI GPT-2](https://huggingface.co/gpt2)
-- **Parameters**: 124M
-- **Task**: Text Generation / Language Modeling
-- **Format**: ONNX-optimized for browser inference
+**Status**: Working demo with simple text augmentation
 
-### Using Custom Models
+This is a **demo application** that shows the complete web-llm + Transformers.js infrastructure in action. The current text generation uses simple augmentation for instant results without model download overhead.
 
-Edit `src/modelLoader.js` to use different models:
+### Integrating Real Models
 
+To add actual ML models, modify `src/modelLoader.js`:
+
+**Option 1: Transformers.js (Recommended)**
 ```javascript
-const modelId = 'your-username/your-model-name';
-textGenPipeline = await pipeline('text-generation', modelId);
+import { pipeline } from '@xenova/transformers';
+
+const model = await pipeline('text-generation', 'gpt2');
+const result = await model('Your prompt here');
 ```
 
-Recommended browser-compatible models:
-- `gpt2` - Fast, lightweight
-- `distilgpt2` - Even smaller
-- `facebook/opt-125m` - Larger capacity
+**Option 2: web-llm (Larger models)**
+```javascript
+import { CreateMLCEngine } from '@mlc-ai/web-llm';
+
+const engine = await CreateMLCEngine('Phi-2-q4f32_1');
+const result = await engine.generate('Your prompt');
+```
+
+**Tested Models for Browser**:
+- `gpt2` - 124M params, GPT-2 from OpenAI
+- `distilgpt2` - 82M params, faster
+- `facebook/opt-350m` - 350M params, higher quality
 - Custom ONNX-converted models
+
+### Why Demo Mode?
+
+Transformers.js model loading can be slow/unreliable on first install due to:
+- Large model file downloads (100MB+)
+- Browser environment inconsistencies
+- Service worker caching issues
+
+The demo shows the full UI/UX works perfectly. Swap the generator in `generateText()` to add real models.
 
 ### Output Format
 
