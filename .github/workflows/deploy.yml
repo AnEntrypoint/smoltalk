@@ -33,7 +33,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Python dependencies
-        run: pip install "optimum[exporters]==1.23.3" onnx onnxruntime onnxscript
+        run: pip install "optimum[exporters]==1.23.3" "torch==2.1.2" onnx onnxruntime --index-url https://download.pytorch.org/whl/cpu
 
       - name: Convert model to ONNX
         env:
