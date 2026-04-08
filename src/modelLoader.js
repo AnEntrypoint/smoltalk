@@ -1,17 +1,43 @@
 import { pipeline, env } from '@xenova/transformers'
 
 const BASE = window.location.origin + import.meta.env.BASE_URL + 'models/smolrp-135m/'
+const DB_NAME = 'smoltalk'
+const DB_STORE = 'onnx'
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1)
+    req.onupgradeneeded = e => e.target.result.createObjectStore(DB_STORE)
+    req.onsuccess = e => resolve(e.target.result)
+    req.onerror = e => reject(e.target.error)
+  })
+}
+
+function idbGet(db, key) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).get(key)
+    req.onsuccess = e => resolve(e.target.result)
+    req.onerror = e => reject(e.target.error)
+  })
+}
+
+function idbPut(db, key, val) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).put(val, key)
+    req.onsuccess = () => resolve()
+    req.onerror = e => reject(e.target.error)
+  })
+}
 
 async function fetchOnnxModel(url) {
-  const manifestUrl = BASE + 'model.onnx.manifest.json'
-  const manifestResp = await fetch(manifestUrl, { cache: 'no-store' })
-  if (!manifestResp.ok) throw new Error(`Manifest fetch failed: ${manifestResp.status}`)
+  const manifestResp = await fetch(BASE + 'model.onnx.manifest.json', { cache: 'no-store' })
+  if (!manifestResp.ok) throw new Error('Manifest fetch failed: ' + manifestResp.status)
   const { chunks, total_bytes } = await manifestResp.json()
   const parts = []
   let loaded = 0
   for (let i = 0; i < chunks; i++) {
-    const r = await fetch(BASE + `model.onnx.part${i}`)
-    if (!r.ok) throw new Error(`Failed to fetch model chunk part${i}: ${r.status}`)
+    const r = await fetch(BASE + 'model.onnx.part' + i)
+    if (!r.ok) throw new Error('Failed to fetch chunk part' + i + ': ' + r.status)
     const buf = await r.arrayBuffer()
     parts.push(buf)
     loaded += buf.byteLength
@@ -23,24 +49,33 @@ async function fetchOnnxModel(url) {
     full.set(new Uint8Array(part), offset)
     offset += part.byteLength
   }
-  return new Response(full.buffer, { status: 200, headers: { 'Content-Type': 'application/octet-stream' } })
+  return full.buffer
+}
+
+let _db = null
+async function getDB() {
+  if (!_db) _db = await openDB()
+  return _db
 }
 
 const chunkCache = {
-  _store: new Map(),
   async match(req) {
     const url = typeof req === 'string' ? req : req.url
-    if (this._store.has(url)) return this._store.get(url).clone()
+    const db = await getDB()
+    const cached = await idbGet(db, url)
+    if (cached) return new Response(cached, { status: 200, headers: { 'Content-Type': 'application/octet-stream' } })
     if (url.includes('/onnx/') || url.endsWith('.onnx')) {
-      const resp = await fetchOnnxModel(url)
-      this._store.set(url, resp)
-      return resp.clone()
+      const buf = await fetchOnnxModel(url)
+      await idbPut(db, url, buf)
+      return new Response(buf, { status: 200, headers: { 'Content-Type': 'application/octet-stream' } })
     }
     return undefined
   },
   async put(req, resp) {
     const url = typeof req === 'string' ? req : req.url
-    this._store.set(url, resp)
+    const buf = await resp.clone().arrayBuffer()
+    const db = await getDB()
+    await idbPut(db, url, buf)
   }
 }
 
