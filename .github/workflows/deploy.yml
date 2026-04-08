@@ -40,11 +40,11 @@ jobs:
       - name: Convert model to ONNX
         env:
           HF_TOKEN: ${{ secrets.VITE_HF_TOKEN }}
+          TORCH_ONNX_DYNAMO: "0"
         run: |
           python -m optimum.exporters.onnx \
             -m Real-Turf/SmolRP-135M-v0.9 \
             --task text-generation-with-past \
-            --no-post-process \
             public/models/smolrp-135m/
 
       - name: Install dependencies
