@@ -1,8 +1,9 @@
-import { pipeline } from '@xenova/transformers'
+import { pipeline, env } from '@xenova/transformers'
+
+env.localModelPath = window.location.origin + import.meta.env.BASE_URL + 'models/'
+env.allowRemoteModels = false
 
 let textGenPipeline = null
-
-const MODEL_PATH = window.location.origin + import.meta.env.BASE_URL + 'models/smolrp-135m/'
 
 export async function initTextGenModel(onProgress) {
   if (textGenPipeline) return textGenPipeline
@@ -16,7 +17,7 @@ export async function initTextGenModel(onProgress) {
     }
   }
 
-  textGenPipeline = await pipeline('text-generation', MODEL_PATH, config)
+  textGenPipeline = await pipeline('text-generation', 'smolrp-135m', config)
   return textGenPipeline
 }
 
