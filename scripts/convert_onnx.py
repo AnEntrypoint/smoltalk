@@ -2,34 +2,22 @@ import sys
 import os
 import json
 import shutil
-from optimum.exporters.onnx import main_export
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, list_repo_files
 
 model_id = "HuggingFaceTB/SmolLM2-135M-Instruct"
+onnx_repo = "onnx-community/SmolLM2-135M-Instruct-ONNX"
 output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smollm2-135m-instruct"
 CHUNK_MB = 90
 
 os.makedirs(output_dir, exist_ok=True)
 
-print("Exporting with optimum (KV cache, int4)...")
-main_export(
-    model_name_or_path=model_id,
-    output=output_dir,
-    task="text-generation-with-past",
-    dtype="int4",
-)
-print("optimum export done")
-
-print("Downloading extra tokenizer files...")
+print("Downloading tokenizer and config files...")
 for fname in ["tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt", "special_tokens_map.json", "config.json", "generation_config.json"]:
     try:
         path = hf_hub_download(repo_id=model_id, filename=fname)
         dst = os.path.join(output_dir, fname)
-        if not os.path.exists(dst):
-            shutil.copy(path, dst)
-            print(f"Copied {fname}")
-        else:
-            print(f"Already present: {fname}")
+        shutil.copy(path, dst)
+        print(f"Copied {fname}")
     except Exception as e:
         print(f"Skipped {fname}: {e}")
 
@@ -46,14 +34,12 @@ if os.path.exists(tok_path):
             json.dump(tok, f, ensure_ascii=False)
         print("Fixed tokenizer.json merges format")
 
+print(f"Downloading q4f16 ONNX from {onnx_repo}...")
+onnx_file = "onnx/model_q4f16.onnx"
+path = hf_hub_download(repo_id=onnx_repo, filename=onnx_file)
 onnx_path = os.path.join(output_dir, "model.onnx")
-merged_path = os.path.join(output_dir, "model_merged.onnx")
-if not os.path.exists(onnx_path) and os.path.exists(merged_path):
-    os.rename(merged_path, onnx_path)
-    print("Renamed model_merged.onnx -> model.onnx")
-
-if not os.path.exists(onnx_path):
-    raise RuntimeError(f"No model.onnx found in {output_dir}. Files: {os.listdir(output_dir)}")
+shutil.copy(path, onnx_path)
+print(f"Downloaded ONNX")
 
 q_mb = os.path.getsize(onnx_path) / 1024 / 1024
 print(f"ONNX size: {q_mb:.1f}MB")

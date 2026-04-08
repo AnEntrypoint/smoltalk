@@ -33,9 +33,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Python dependencies
-        run: |
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install "optimum[onnxruntime]" "transformers>=4.40" onnx "onnxruntime>=1.17"
+        run: pip install "huggingface-hub" "transformers>=4.40"
 
       - name: Convert model to ONNX
         env:
