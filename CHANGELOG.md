@@ -11,3 +11,10 @@
 
 ### Fixed
 - modelLoader.js: set env.useBrowserCache=false so Transformers.js uses custom cache instead of browser Cache API for ONNX loading
+
+## 2026-04-08 (3)
+
+### Changed
+- convert_onnx.py: replaced FP32 export+chunking with INT4 Q4F16 quantization via MatMul4BitsQuantizer (~64MB single file)
+- deploy.yml: added onnxruntime>=1.17 pip dependency for INT4 quantization support
+- model.onnx.manifest.json now emitted with chunks:1 (no reassembly loop needed)

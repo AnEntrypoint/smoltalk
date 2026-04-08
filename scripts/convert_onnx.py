@@ -5,10 +5,10 @@ import shutil
 import torch
 from transformers import AutoModelForCausalLM
 from huggingface_hub import hf_hub_download
+from onnxruntime.quantization import MatMul4BitsQuantizer
 
 model_id = "Real-Turf/SmolRP-135M-v0.9"
 output_dir = sys.argv[1] if len(sys.argv) > 1 else "public/models/smolrp-135m"
-CHUNK_MB = 90
 
 os.makedirs(output_dir, exist_ok=True)
 
@@ -16,7 +16,7 @@ print(f"Loading model {model_id}...")
 model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float32)
 model.eval()
 
-print("Downloading tokenizer files directly...")
+print("Downloading tokenizer files...")
 for fname in ["config.json", "generation_config.json", "tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt", "special_tokens_map.json"]:
     try:
         path = hf_hub_download(repo_id=model_id, filename=fname)
@@ -40,14 +40,15 @@ if "model" in tok and "merges" in tok["model"]:
 input_ids = torch.ones((1, 5), dtype=torch.long)
 attention_mask = torch.ones((1, 5), dtype=torch.long)
 
+fp32_path = os.path.join(output_dir, "model_fp32.onnx")
 onnx_path = os.path.join(output_dir, "model.onnx")
 
-print("Exporting ONNX...")
+print("Exporting FP32 ONNX...")
 with torch.no_grad():
     torch.onnx.export(
         model,
         (input_ids, attention_mask),
-        onnx_path,
+        fp32_path,
         input_names=["input_ids", "attention_mask"],
         output_names=["logits"],
         dynamic_axes={
@@ -59,25 +60,23 @@ with torch.no_grad():
         dynamo=False,
     )
 
-size_mb = os.path.getsize(onnx_path) / 1024 / 1024
-print(f"ONNX: {size_mb:.1f}MB")
+fp32_mb = os.path.getsize(fp32_path) / 1024 / 1024
+print(f"FP32 ONNX: {fp32_mb:.1f}MB")
 
-chunk_size = CHUNK_MB * 1024 * 1024
-with open(onnx_path, "rb") as f:
-    data = f.read()
+print("Quantizing to INT4 (Q4F16)...")
+quantizer = MatMul4BitsQuantizer(fp32_path, block_size=32, is_symmetric=True, accuracy_level=4)
+quantizer.process()
+quantizer.model.save_model_to_file(onnx_path, use_external_data_format=False)
+os.remove(fp32_path)
 
-total_bytes = len(data)
-chunks = [data[i:i+chunk_size] for i in range(0, total_bytes, chunk_size)]
-os.remove(onnx_path)
+q4_mb = os.path.getsize(onnx_path) / 1024 / 1024
+print(f"Q4F16 ONNX: {q4_mb:.1f}MB")
+if q4_mb >= 100:
+    raise RuntimeError(f"Quantized model is {q4_mb:.1f}MB, exceeds 100MB GitHub Pages limit")
 
-for i, chunk in enumerate(chunks):
-    path = os.path.join(output_dir, f"model.onnx.part{i}")
-    with open(path, "wb") as f:
-        f.write(chunk)
-    print(f"  part{i}: {len(chunk)/1024/1024:.1f}MB")
-
-manifest = {"chunks": len(chunks), "total_bytes": total_bytes}
+total_bytes = os.path.getsize(onnx_path)
+manifest = {"chunks": 1, "total_bytes": total_bytes}
 with open(os.path.join(output_dir, "model.onnx.manifest.json"), "w") as f:
     json.dump(manifest, f)
 
-print(f"Split into {len(chunks)} parts ({total_bytes} bytes total)")
+print(f"Done: {onnx_path} ({q4_mb:.1f}MB)")
