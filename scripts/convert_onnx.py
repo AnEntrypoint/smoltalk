@@ -64,7 +64,7 @@ fp32_mb = os.path.getsize(fp32_path) / 1024 / 1024
 print(f"FP32 ONNX: {fp32_mb:.1f}MB")
 
 print("Quantizing to INT4 (MatMulNBits)...")
-quantizer = MatMulNBitsQuantizer(fp32_path, block_size=32, n_bits=4, is_symmetric=True, accuracy_level=4)
+quantizer = MatMulNBitsQuantizer(fp32_path, 4, 32, is_symmetric=True, accuracy_level=4)
 quantizer.process()
 quantizer.model.save_model_to_file(onnx_path, use_external_data_format=False)
 os.remove(fp32_path)
