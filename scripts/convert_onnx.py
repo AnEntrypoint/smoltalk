@@ -11,12 +11,12 @@ CHUNK_MB = 90
 
 os.makedirs(output_dir, exist_ok=True)
 
-print("Exporting with optimum (KV cache, FP32)...")
+print("Exporting with optimum (KV cache, q4f16)...")
 main_export(
     model_name_or_path=model_id,
     output=output_dir,
     task="text-generation-with-past",
-    dtype="fp32",
+    dtype="q4f16",
 )
 print("optimum export done")
 

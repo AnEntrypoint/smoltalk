@@ -1,4 +1,4 @@
-import { pipeline, env } from '@xenova/transformers'
+import { pipeline, env } from '@huggingface/transformers'
 
 const BASE = window.location.origin + import.meta.env.BASE_URL + 'models/smolrp-135m/'
 const DB_NAME = 'smoltalk'
@@ -90,7 +90,7 @@ let textGenPipeline = null
 
 export async function initTextGenModel(onProgress) {
   if (textGenPipeline) return textGenPipeline
-  const config = {}
+  const config = { device: 'webgpu', dtype: 'q4f16' }
   if (onProgress) {
     config.progress_callback = (status) => {
       if (status.status === 'downloading' || status.status === 'progress') {
