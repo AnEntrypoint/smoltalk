@@ -91,7 +91,7 @@ let textGenPipeline = null
 
 export async function initTextGenModel(onProgress) {
   if (textGenPipeline) return textGenPipeline
-  const config = { device: 'webgpu', dtype: 'q4f16' }
+  const config = { device: 'webgpu', dtype: 'q4' }
   if (onProgress) {
     config.progress_callback = (status) => {
       if (status.status === 'downloading' || status.status === 'progress') {

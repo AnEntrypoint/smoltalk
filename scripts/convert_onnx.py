@@ -34,8 +34,8 @@ if os.path.exists(tok_path):
             json.dump(tok, f, ensure_ascii=False)
         print("Fixed tokenizer.json merges format")
 
-print(f"Downloading q4f16 ONNX from {onnx_repo}...")
-onnx_file = "onnx/model_q4f16.onnx"
+print(f"Downloading q4 ONNX from {onnx_repo}...")
+onnx_file = "onnx/model_q4.onnx"
 path = hf_hub_download(repo_id=onnx_repo, filename=onnx_file)
 onnx_path = os.path.join(output_dir, "model.onnx")
 shutil.copy(path, onnx_path)

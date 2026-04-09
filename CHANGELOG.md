@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-09
+
+### Fixed
+- Switch dtype from q4f16 to q4: q4f16 causes ORT WASM abort (264782152) on Windows D3D12 even when shader-f16 is reported available; q4 uses fp32 compute which works reliably on WebGPU across platforms
+
 ## 2026-04-08 (5)
 
 ### Changed
