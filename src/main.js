@@ -52,8 +52,9 @@ async function generateResponse() {
     html += '<p class="prompt-text">' + escapeHtml(prompt) + '</p></div>'
     html += '<div class="generation-section"><h3>Generated:</h3>'
     for (const result of results) {
-      const generated = result.generated_text.substring(prompt.length)
-      html += '<div class="generation-item"><pre><code>' + escapeHtml(generated) + '</code></pre></div>'
+      const msgs = result.generated_text
+      const assistantMsg = Array.isArray(msgs) ? msgs.filter(m => m.role === 'assistant').map(m => m.content).join('') : msgs.substring(prompt.length)
+      html += '<div class="generation-item"><pre><code>' + escapeHtml(assistantMsg) + '</code></pre></div>'
     }
     html += '</div></div>'
     resultDiv.innerHTML = html

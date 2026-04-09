@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-09 (2)
+
+### Fixed
+- Pass prompt as chat messages array instead of raw string so SmolLM2-Instruct applies its chat template — fixes incoherent base-model-style output
+- Extract assistant response from structured message array in results
+
 ## 2026-04-09
 
 ### Fixed

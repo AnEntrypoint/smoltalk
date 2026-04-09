@@ -106,7 +106,8 @@ export async function initTextGenModel(onProgress) {
 export async function generateText(prompt, options = {}) {
   if (!textGenPipeline) throw new Error('Model not initialized — call initTextGenModel first')
   if (!prompt || prompt.trim().length === 0) throw new Error('Prompt cannot be empty')
-  const result = await textGenPipeline(prompt, {
+  const messages = [{ role: 'user', content: prompt }]
+  const result = await textGenPipeline(messages, {
     max_new_tokens: 100,
     temperature: 0.7,
     top_p: 0.95,
